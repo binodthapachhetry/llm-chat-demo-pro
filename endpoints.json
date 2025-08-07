@@ -1,0 +1,7 @@
+{
+  "endpoints": [
+    { "name": "Prod","env": "PROD_API_URL"},
+    { "name": "Staging","env": "STAGING_API_URL"},
+    { "name": "Local","env": "LOCAL_API_URL"}
+  ]
+}
