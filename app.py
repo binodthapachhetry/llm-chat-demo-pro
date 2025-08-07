@@ -1,6 +1,8 @@
 import gradio as gr
 import requests, os, uuid, json, re, time, boto3, io
 import datetime
+from datetime import timezone
+
 from pathlib import Path
 from dotenv import load_dotenv
 load_dotenv()
@@ -25,7 +27,7 @@ CW_CLIENT = boto3.client("logs") if CW_LOG_GROUP else None
 if CW_CLIENT:
     try: CW_CLIENT.create_log_group(logGroupName=CW_LOG_GROUP)
     except CW_CLIENT.exceptions.ResourceAlreadyExistsException: pass
-    LOG_STREAM = datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%d")
+    LOG_STREAM = datetime.datetime.now(timezone.utc).strftime("%Y-%m-%d")
     try: CW_CLIENT.create_log_stream(logGroupName=CW_LOG_GROUP, logStreamName=LOG_STREAM)
     except CW_CLIENT.exceptions.ResourceAlreadyExistsException: pass
 
@@ -33,7 +35,7 @@ PII_REGEX = re.compile(r"(\b\d{3}[-.]?\d{2}[-.]?\d{4}\b|\b\d{10}\b|[\w\.-]+@[\w\
 def scrub(text): return PII_REGEX.sub("[REDACTED]", text)
 
 def write_log(entry: dict):
-    day_file = LOG_DIR / f"{datetime.datetime.now(datetime.UTC).date()}.jsonl"
+    day_file = LOG_DIR / f"{datetime.datetime.now(timezone.utc).date()}.jsonl"
     day_file.open("a", encoding="utf-8").write(json.dumps(entry, ensure_ascii=False) + "\n")
     if CW_CLIENT:
         CW_CLIENT.put_log_events(
@@ -54,7 +56,7 @@ def load_timeseries(file):
 
 # ---------- Chat handler ----------
 def chat(user_input, history, endpoint_choice, ts_dict):
-    timestamp = datetime.datetime.now(datetime.UTC).isoformat()
+    timestamp = datetime.datetime.now(timezone.utc).isoformat()
     user_id   = str(uuid.uuid4())[:8]
 
     formatted_history = []
@@ -101,7 +103,7 @@ def chat(user_input, history, endpoint_choice, ts_dict):
 def rate_fn(rating, history):
     if rating and history:
         write_log({
-            "timestamp": datetime.datetime.now(datetime.UTC).isoformat(),
+            "timestamp": datetime.datetime.now(timezone.utc).isoformat(),
             "rating":    rating,
             "turn_index":len(history) - 1
         })
